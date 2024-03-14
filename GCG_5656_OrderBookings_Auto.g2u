@@ -1,0 +1,533 @@
+Program.Sub.ScreenSU.Start
+Gui.F_Maint..Create
+Gui.F_Maint..Caption("Maintenance")
+Gui.F_Maint..Size(7620,3345)
+Gui.F_Maint..MinX(0)
+Gui.F_Maint..MinY(0)
+Gui.F_Maint..Position(0,0)
+Gui.F_Maint..BackColor(-2147483633)
+Gui.F_Maint..MaxButton(False)
+Gui.F_Maint..MousePointer(0)
+Gui.F_Maint..Sizeable(False)
+Gui.F_Maint..Event(UnLoad,F_Maint_UnLoad)
+Gui.F_Maint.lblDaysToRun.Create(Label,"Run report on these days:",True,2370,255,0,60,120,True,0,"Arial",8,-2147483633,0)
+Gui.F_Maint.chkSunday.Create(CheckBox)
+Gui.F_Maint.chkSunday.Size(975,360)
+Gui.F_Maint.chkSunday.Position(120,345)
+Gui.F_Maint.chkSunday.Caption("Sunday")
+Gui.F_Maint.chkMonday.Create(CheckBox)
+Gui.F_Maint.chkMonday.Size(975,360)
+Gui.F_Maint.chkMonday.Position(1110,345)
+Gui.F_Maint.chkMonday.Caption("Monday")
+Gui.F_Maint.chkTuesday.Create(CheckBox)
+Gui.F_Maint.chkTuesday.Size(1050,360)
+Gui.F_Maint.chkTuesday.Position(2100,345)
+Gui.F_Maint.chkTuesday.Caption("Tuesday")
+Gui.F_Maint.chkWednesday.Create(CheckBox)
+Gui.F_Maint.chkWednesday.Size(1290,360)
+Gui.F_Maint.chkWednesday.Position(3165,345)
+Gui.F_Maint.chkWednesday.Caption("Wednesday")
+Gui.F_Maint.chkThursday.Create(CheckBox)
+Gui.F_Maint.chkThursday.Size(1110,360)
+Gui.F_Maint.chkThursday.Position(4470,345)
+Gui.F_Maint.chkThursday.Caption("Thursday")
+Gui.F_Maint.chkFriday.Create(CheckBox)
+Gui.F_Maint.chkFriday.Size(855,360)
+Gui.F_Maint.chkFriday.Position(5595,345)
+Gui.F_Maint.chkFriday.Caption("Friday")
+Gui.F_Maint.chkSaturday.Create(CheckBox)
+Gui.F_Maint.chkSaturday.Size(1080,360)
+Gui.F_Maint.chkSaturday.Position(6465,345)
+Gui.F_Maint.chkSaturday.Caption("Saturday")
+Gui.F_Maint.txtEmails.Create(TextboxM)
+Gui.F_Maint.txtEmails.Size(7215,1275)
+Gui.F_Maint.txtEmails.Position(210,1005)
+Gui.F_Maint.lblEmails.Create(Label,"Name;Email with each entry separated by a comma (,):",True,4230,255,0,60,780,True,0,"Arial",8,-2147483633,0)
+Gui.F_Maint.cmdSave.Create(Button)
+Gui.F_Maint.cmdSave.Size(1020,435)
+Gui.F_Maint.cmdSave.Position(135,2475)
+Gui.F_Maint.cmdSave.Caption("Save")
+Gui.F_Maint.cmdSave.Event(Click,cmdSave_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Bix
+'Date 29 Aug 2019
+'U.S. Bolt Manufacturing
+'GCG_5656_OrderBookings_Auto.g2u
+'Auto runs Order Bookings report for the month every day sends it to email(s) setup in maintenance program
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+'DEBUG
+'F.Intrinsic.Control.CallSub(OpenMaintenanceScreen)
+'F.Intrinsic.Control.ExitSub
+'DEBUG
+
+F.Intrinsic.Control.SelectCase(V.Caller.Switches.UCase)
+	F.Intrinsic.Control.Case("M")
+		'Run maintenance program
+		F.Intrinsic.Control.CallSub(OpenMaintenanceScreen)
+	F.Intrinsic.Control.CaseElse
+		'Run order bookings report and email it
+		F.Intrinsic.Control.CallSub(ProcessYTD_Total)
+		F.Intrinsic.Control.CallSub(PrintOrderBookingReport)
+		F.Intrinsic.Control.CallSub(EmailOrderBookingReport,"Emails",V.Args.Emails,"File",V.Args.File)
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Caller.Switches.UCase,=,"M")
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Build("{2}{0}Could not reach End of Program{1}| Date: {3}{1}| Time: {4}{1}| User: {5}",V.Ambient.NewLine,V.Ambient.Tab,V.Local.sLog,V.Ambient.Date.FormatDD-MM-YYYY,V.Ambient.Time.FormatHH:NN:SS,V.Caller.User,V.Local.sError)
+		F.Intrinsic.String.Build("{1}{0}Project: {2}{3}{3}Subroutine: {4}{3}Error Occurred {5} with description {6}{3}{3}GAB Version: {7}",V.Ambient.NewLine,V.Local.sError,V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.Control.CallSub(SaveLog,"Log",V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.OpenMaintenanceScreen.Start
+V.Local.sError.Declare
+V.Local.sRet.Declare
+V.Local.iDaysToRun.Declare
+V.Local.iRet.Declare
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.ExecuteAndReturn("select DAYS_TO_RUN, EMAILS from GCG_5656_MAINT;",V.Local.sRet)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+V.Local.sRet.RedimPreserve(0,1)
+V.Local.iDaysToRun.Set(V.Local.sRet(0).Long)
+V.Local.sRet(0).Set(V.Local.sRet(1))
+V.Local.sRet.RedimPreserve(0,0)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+	V.Local.iDaysToRun.Set(0)
+	V.Local.sRet.Set("")
+	F.ODBC.Connection!con.OpenCompanyConnection
+	F.ODBC.Connection!con.Execute("insert into GCG_5656_MAINT (DAYS_TO_RUN, EMAILS) values (0, '')")
+	F.ODBC.Connection!con.Close
+F.Intrinsic.Control.EndIf
+
+'Get list of weekdays that has been saved
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,64,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	Gui.F_Maint.chkSaturday.Value(1)
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,32,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	Gui.F_Maint.chkFriday.Value(1)
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,16,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	Gui.F_Maint.chkThursday.Value(1)
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,8,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	Gui.F_Maint.chkWednesday.Value(1)
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,4,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	Gui.F_Maint.chkTuesday.Value(1)
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,2,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	Gui.F_Maint.chkMonday.Value(1)
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,1,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,=,0)
+	Gui.F_Maint.chkSunday.Value(1)
+F.Intrinsic.Control.EndIf
+
+'Set emails textbox
+Gui.F_Maint.txtEmails.Text(V.Local.sRet.Trim)
+
+Gui.F_Maint..Show
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.OpenMaintenanceScreen.End
+
+Program.Sub.F_Maint_UnLoad.Start
+F.Intrinsic.Control.End
+Program.Sub.F_Maint_UnLoad.End
+
+Program.Sub.cmdSave_Click.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+V.Local.sEmails.Declare
+V.Local.iDaysToRun.Declare
+V.Local.iCnt.Declare
+V.Local.iRet.Declare
+F.Intrinsic.Control.Try
+
+Gui.F_Maint..Enabled(False)
+
+V.Local.iDaysToRun.Set(0)
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkSunday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,1,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkMonday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,2,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkTuesday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,4,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkWednesday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,8,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkThursday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,16,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkFriday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,32,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Maint!chkSaturday.CheckedAsBoolean)
+	F.Intrinsic.Math.Add(V.Local.iDaysToRun,64,V.Local.iDaysToRun)
+F.Intrinsic.Control.EndIf
+
+'Check emails are setup right
+F.Intrinsic.Control.If(V.Screen.F_Maint!txtEmails.Text,!=,"")
+	F.Intrinsic.String.Split(V.Screen.F_Maint!txtEmails.Text,",",V.Local.sEmails)
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sEmails.UBound,1)
+		V.Local.sEmails(V.Local.iCnt).Set(V.Local.sEmails(V.Local.iCnt).Trim)
+		F.Intrinsic.String.Occurs(V.Local.sEmails(V.Local.iCnt),";",V.Local.iRet)
+		F.Intrinsic.Control.If(V.Local.iRet,!=,1)
+			'exit sub
+			F.Intrinsic.UI.Msgbox("Verify that email(s) have the format of Name first then the delimiter, a semicolon (;), and then the Email. If more than one Name;Email is in the textbox, make sure that a comma (,) is used to separate the different entries.","SAVE NOT COMPLETE")
+			F.Intrinsic.String.Join(V.Local.sEmails,",",V.Local.sEmails)
+			V.Local.sEmails.RedimPreserve(0,0)
+			Gui.F_Maint.txtEmails.Text(V.Local.sEmails)
+			Gui.F_Maint..Enabled(True)
+			F.Intrinsic.Control.ExitSub
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Intrinsic.String.Join(V.Local.sEmails,",",V.Local.sEmails)
+	V.Local.sEmails.RedimPreserve(0,0)
+	Gui.F_Maint.txtEmails.Text(V.Local.sEmails)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.Build("insert into GCG_5656_MAINT (DAYS_TO_RUN, EMAILS) values ({0}, '{1}');",V.Local.iDaysToRun.String,V.Screen.F_Maint!txtEmails.Text,V.Local.sSQL)
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.Execute("delete from GCG_5656_MAINT")
+F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.UI.Msgbox("Saved!")
+
+Gui.F_Maint..Enabled(True)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.ProcessYTD_Total.Start
+'Run Bookings YTD to get YTD total
+
+V.Local.sError.Declare
+V.Global.fYTD_Total.Declare
+V.Local.sParams.Declare
+V.Local.sTerminal.Declare
+V.Local.sRptID.Declare
+V.Local.dYesterday.Declare
+V.Local.dBegMonth.Declare
+V.Local.lYear.Declare
+V.Local.dBegYear.Declare
+V.Local.sSql.Declare
+
+'Run callwrapper to get order booking BI table filled for date range
+F.Intrinsic.Date.Year(V.Ambient.Date,V.Local.lYear)
+F.Intrinsic.String.Build("1/1/{0}",V.Local.lYear,V.Local.dBegYear)
+F.Intrinsic.Date.DateAdd("d",-1,V.Ambient.Date,V.Local.dYesterday)
+
+F.Intrinsic.String.ConcatCallWrapperArgs(V.Local.dBegYear.FormatMMDDYY,V.Local.dYesterday.FormatMMDDYY,"L","","","","|~|CRYSTAL-OVERRIDE|~|",V.Local.sParams)
+
+F.Global.General.CallWrapperSyncBIO(910040,V.Local.sParams)
+'Get Termianl ID
+F.Intrinsic.String.LPad(V.Caller.Terminal,"0",3,V.Local.sTerminal)
+'Report ID 000072
+F.Intrinsic.String.LPad("72","0",6,V.Local.sRptID)
+
+F.Intrinsic.String.Build("Select SUM(AMOUNT) From V_BI_BOOKINGS Where TRMNL = '{0}' AND RPTID = '{1}';",v.Local.sTerminal,v.Local.sRptID,v.Local.sSql)
+
+'Get YTD total from V_BI_BOOKINGS table
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSql,V.Global.fYTD_Total)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.ExitSub
+Program.Sub.ProcessYTD_Total.End
+
+Program.Sub.PrintOrderBookingReport.Start
+V.Local.sError.Declare
+V.Local.sRet.Declare
+V.Local.sParams.Declare
+V.Local.sTerminal.Declare
+V.Local.sRptID.Declare
+V.Local.sValues.Declare
+V.Local.sFile.Declare
+V.Local.iDaysToRun.Declare
+V.Local.iRet.Declare
+V.Local.iWeekday.Declare
+V.Local.iBIRunID.Declare
+V.Local.iBILogID.Declare
+V.Local.dYesterday.Declare
+V.Local.dBegMonth.Declare
+V.Local.bDateCheck.Declare
+F.Intrinsic.Control.Try
+
+'Get information from maintenance table
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.ExecuteAndReturn("select DAYS_TO_RUN, EMAILS from GCG_5656_MAINT;",V.Local.sRet)
+F.ODBC.Connection!con.Close
+
+'An entry hasn't been recorded in the maintenance table, end program
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+V.Local.sRet.RedimPreserve(0,1)
+V.Local.iDaysToRun.Set(V.Local.sRet(0).Long)
+V.Local.sRet(0).Set(V.Local.sRet(1))
+V.Local.sRet.RedimPreserve(0,0)
+
+F.Intrinsic.Control.If(V.Local.sRet,=,"")
+	'No emails to send to, exit the program
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Variable.AddRV("Emails",V.Local.sRet)
+
+'Check if yesterday's weekday is one of the selected ones in the maintenance
+F.Intrinsic.Date.DateAdd("d",-1,V.Ambient.Date,V.Local.dYesterday)
+F.Intrinsic.Date.Weekday(V.Local.dYesterday,V.Local.iWeekday)
+V.Local.bDateCheck.Set(False)
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,64,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,7)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,32,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,6)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,16,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,5)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,8,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,4)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,4,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,3)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,2,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,2)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+	V.Local.iDaysToRun.Set(V.Local.iRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Math.Sub(V.Local.iDaysToRun,1,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,=,0)
+	F.Intrinsic.Control.If(V.Local.iWeekday,=,1)
+'	F.Intrinsic.Control.If("1",=,1)
+		V.Local.bDateCheck.Set(True)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.Local.bDateCheck.Not)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Date.BeginningOfMonth(V.Local.dYesterday,V.Local.dBegMonth)
+
+'Run callwrapper to get order booking BI table filled for date range
+F.Intrinsic.String.ConcatCallWrapperArgs(V.Local.dBegMonth.FormatMMDDYY,V.Local.dYesterday.FormatMMDDYY,"L","","","","|~|CRYSTAL-OVERRIDE|~|",V.Local.sParams)
+F.Global.General.CallWrapperSyncBIO(910040,V.Local.sParams)
+
+
+'Save report to be emailed
+V.Local.sParams.Set("Terminal*!*Rptid*!*Program*!*BEGDATE*!*ENDDATE*!*BEGRANGE*!*ENDRANGE*!*ALLDATES*!*ALLRANGE*!*YTDTOTAL")
+F.Intrinsic.String.LPad(V.Caller.Terminal,"0",3,V.Local.sTerminal)
+F.Intrinsic.String.LPad("72","0",6,V.Local.sRptID)
+F.Intrinsic.String.Build("{0}*!*{1}*!*{2}*!*{3}*!*{4}*!*{5}*!*{6}*!*{7}*!*{8}*!*{9}",V.Local.sTerminal,V.Local.sRptID,"GCG_5656",V.Local.dBegMonth,V.Local.dYesterday,,,,"Y",V.Global.fYTD_Total,V.Local.sValues)
+F.Intrinsic.String.Build("{0}GCG_5656_OrderBooking.pdf",V.Caller.LocalGSSTempDir,V.Local.sFile)
+F.Global.BI.GetRunID(V.Local.iBIRunID)
+'F.Global.BI.StartLogging(V.Local.iBIRunID,72,-1,"",V.Local.iBILogID)
+'Using report seq 10 
+F.Global.BI.StartLogging(V.Local.iBIRunID,72,10,"",V.Local.iBILogID)
+F.Global.BI.StopLogging(V.Local.iBILogID)
+F.Global.BI.RunReportPreProcessor(V.Local.iBIRunID,V.Local.iBILogID,V.Local.sParams,V.Local.sValues,"",4,True,"",-1,"",0,V.Local.sFile,"",V.Local.iBIRunID)
+
+F.Intrinsic.Variable.AddRV("File",V.Local.sFile)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("{2}{0}Could not reach End of Program{1}| Date: {3}{1}| Time: {4}{1}| User: {5}",V.Ambient.NewLine,V.Ambient.Tab,V.Local.sLog,V.Ambient.Date.FormatDD-MM-YYYY,V.Ambient.Time.FormatHH:NN:SS,V.Caller.User,V.Local.sError)
+	F.Intrinsic.String.Build("{1}{0}Project: {2}{3}{3}Subroutine: {4}{3}Error Occurred {5} with description {6}{3}{3}GAB Version: {7}",V.Ambient.NewLine,V.Local.sError,V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.Control.CallSub(SaveLog,"Log",V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.PrintOrderBookingReport.End
+
+Program.Sub.EmailOrderBookingReport.Start
+V.Local.sError.Declare
+V.Local.sRecipient.Declare
+V.Local.sSubject.Declare
+V.Local.sSender.Declare
+V.Local.sSenderName.Declare
+V.Local.sBody.Declare
+V.Local.sFilePath.Declare
+V.Local.sFileName.Declare
+V.Local.sAttach.Declare
+V.Local.iUserID.Declare
+V.Local.dYesterday.Declare
+V.Local.dBegMonth.Declare
+V.Local.bExists.Declare
+F.Intrinsic.Control.Try
+
+'Collect a multitude of information from the DB
+'Get User ID
+F.Global.Security.GetUserId(V.Caller.User,V.Caller.CompanyCode,V.Local.iUserID)
+
+'Get Subject
+F.Intrinsic.Date.DateAdd("d",-1,V.Ambient.Date,V.Local.dYesterday)
+F.Intrinsic.String.Build("Order Bookings Report - {0}",V.Local.dYesterday.String,V.Local.sSubject)
+
+'Get User Email and User Name
+F.Global.Security.GetUserEmail(V.Caller.User,V.Caller.CompanyCode,V.Local.sSender)
+F.Global.Security.GetFullName(V.Caller.User,V.Caller.CompanyCode,V.Local.sSenderName)
+F.Intrinsic.Control.If(V.Local.sSender,=,"")
+	'If User Email is blank, set default
+	V.Local.sSender.Set("online@update.gss")
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Local.sSenderName,=,"")
+	'If User Name is blank, set company name
+	V.Local.sSenderName.Set(V.Company.Name)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.String.Build("{0}*!*{1}",V.Local.sSender,V.Local.sSenderName,V.Local.sSender)
+
+F.Intrinsic.String.Replace(V.Args.Emails,";","*!*",V.Local.sRecipient)
+F.Intrinsic.String.Split(V.Local.sRecipient,",",V.Local.sRecipient)
+F.Intrinsic.String.Join(V.Local.sRecipient,"@!@",V.Local.sRecipient)
+V.Local.sRecipient.RedimPreserve(0,0)
+F.Intrinsic.String.Build("{0}",V.Local.sRecipient,V.Local.sRecipient)
+
+F.Intrinsic.Date.BeginningOfMonth(V.Local.dYesterday,V.Local.dBegMonth)
+F.Intrinsic.String.Build("Order Bookings Report from {0} to {1} for all Customers is attached",V.Local.dBegMonth.String,V.Local.dYesterday.String,V.Local.sBody)
+
+F.Intrinsic.String.Split(V.Args.File,"\",V.Local.sFilePath)
+V.Local.sFileName.Set(V.Local.sFilePath(V.Local.sFilePath.UBound))
+V.Local.sFilePath(V.Local.sFilePath.UBound).Set("")
+F.Intrinsic.String.Join(V.Local.sFilePath,"\",V.Local.sFilePath)
+V.Local.sFilePath.RedimPreserve(0,0)
+F.Intrinsic.String.Build("{0}*!*{1}",V.Local.sFileName,V.Local.sFilePath,V.Local.sAttach)
+
+'Queue the email
+F.Global.Messaging.QueueMessage(V.Caller.CompanyCode,V.Local.iUserID,"GCG_5656",V.Local.sSubject,V.Local.sSender,V.Local.sRecipient,V.Local.sBody,-1,"",False,"",1/1/1900,"","","","","",V.Local.sAttach,True)
+
+'Check if the order bookings report has been deleted and delete it if it hasn't yet
+F.Intrinsic.File.Exists(V.Args.File,V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists)
+	F.Intrinsic.File.DeleteFile(V.Args.File)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("{2}{0}Could not reach End of Program{1}| Date: {3}{1}| Time: {4}{1}| User: {5}",V.Ambient.NewLine,V.Ambient.Tab,V.Local.sLog,V.Ambient.Date.FormatDD-MM-YYYY,V.Ambient.Time.FormatHH:NN:SS,V.Caller.User,V.Local.sError)
+	F.Intrinsic.String.Build("{1}{0}Project: {2}{3}{3}Subroutine: {4}{3}Error Occurred {5} with description {6}{3}{3}GAB Version: {7}",V.Ambient.NewLine,V.Local.sError,V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.Control.CallSub(SaveLog,"Log",V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.EmailOrderBookingReport.End
+
+Program.Sub.SaveLog.Start
+'V.Args.Log
+V.Local.sLog.Declare
+V.Local.sLogFile.Declare
+V.Local.sLogFileString.Declare
+V.Local.sFileList.Declare
+V.Local.sFile.Declare
+V.Local.iCnt.Declare
+V.Local.bExists.Declare
+V.Local.dThirtyLess.Declare
+V.Local.dFileDate.Declare
+F.Intrinsic.Control.Try
+
+V.Local.sLog.Set(V.Args.Log)
+
+'Add to today's log file or create a new one if it doesn't exist
+F.Intrinsic.String.Build("{0}\CUSTOM\5656\{1}\LOG_FILES\",V.Caller.GlobalDir,V.Caller.CompanyCode,V.Local.sLogFile)
+F.Intrinsic.File.DirExists(V.Local.sLogFile,V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists.Not)
+	F.Intrinsic.File.CreateDir(V.Local.sLogFile)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.String.Build("{1}GCG_5656_ErrorLog_{0}.txt",V.Ambient.Date.FormatDDMMYYYY,V.Local.sLogFile,V.Local.sLogFile)
+F.Intrinsic.File.Exists(V.Local.sLogFile,V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists)
+	F.Intrinsic.File.File2String(V.Local.sLogFile,V.Local.sLogFileString)
+	F.Intrinsic.String.Build("{1}{0}{2}",V.Ambient.NewLine,V.Local.sLogFileString,V.Local.sLog,V.Local.sLog)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.File.String2File(V.Local.sLogFile,V.Local.sLog)
+
+'Delete old logs over 30 days
+F.Intrinsic.String.Build("{0}\CUSTOM\5656\{1}\LOG_FILES\",V.Caller.GlobalDir,V.Caller.CompanyCode,V.Local.sLogFile)
+F.Intrinsic.File.GetFileList(V.Local.sLogFile,V.Local.sFileList)
+F.Intrinsic.Control.If(V.Local.sFileList,!=,"")
+	F.Intrinsic.Date.DateAdd("d",-30,V.Ambient.Date,V.Local.dThirtyLess)
+	F.Intrinsic.String.Split(V.Local.sFileList,":",V.Local.sFileList)
+	
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.Local.sFileList.UBound,1)
+		F.Intrinsic.String.Split(V.Local.sFileList(V.Local.iCnt),".",V.Local.sFile)
+		F.Intrinsic.String.Split(V.Local.sFile(0),"_",V.Local.sFile)
+		F.Intrinsic.Date.ConvertDString(V.Local.sFile(3),"DDMMYYYY",V.Local.dFileDate)
+		F.Intrinsic.Control.If(V.Local.dFileDate,<,V.Local.dThirtyLess)
+			'File is over 30 days old, delete it
+			F.Intrinsic.String.Build("{0}{1}",V.Local.sLogFile,V.Local.sFileList(V.Local.iCnt),V.Local.sLogFile)
+			F.Intrinsic.File.DeleteFile(V.Local.sLogFile)
+		F.Intrinsic.Control.EndIf
+		V.Local.sFile.Redim(0,0)
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("{0}\CUSTOM\5656\{1}\LOG_FILES\GCG_5656_ERR_FILE.txt",V.Caller.GlobalDir,V.Caller.CompanyCode,V.Local.sLogFile)
+	F.Intrinsic.File.File2String(V.Local.sLogFile,V.Local.sLog)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.SaveLog.End
